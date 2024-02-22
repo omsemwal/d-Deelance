@@ -341,7 +341,7 @@ const avatar = async (req, res) => {
     }
 
     // The path of the avatar will always be based on the userId, so there's no need to update it in the DB
-    const avatarUrl = `/uploads/${userId}.${req.file.filename
+    const avatarUrl = `./uploads/${userId}.${req.file.filename
       .split(".")
       .pop()}`;
     res.status(200).json({ avatar: avatarUrl });
