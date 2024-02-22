@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "nodemailer-brevo-transport": "^2.1.0"
+  }
+}
