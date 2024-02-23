@@ -5,6 +5,12 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const Transport = require("nodemailer-brevo-transport");
 const nodemailer = require("nodemailer");
+
+const axios = require('axios');
+
+const BrevoTransport = require('nodemailer-brevo-transport');
+
+const { token, authenticate,getUserFromToken  } = require("../middleware/mid");
 // const sendEmail = require('../utils/sendEmail');
 
 // Function to validate email format
@@ -124,91 +130,127 @@ async function sendPasswordResetEmail(to, resetLink) {
       console.error('Errore nell\'invio dell\'email:', error);
     }
 }
+
+
+//   const { token } = req.query;
+
+//   // Check if token is provided and not empty
+//   if (!token || typeof token !== 'string' || token.trim().length === 0) {
+//       return res.status(400).json({ errors: [{ type: 'field', msg: 'Token is required', location: 'query' }] });
+//   }
+
+//   try {
+//       // Find user by verification token
+//       const user = await User.findOne({ verificationToken: token });
+//       if (!user) {
+//           return res.status(400).send('Invalid token');
+//       }
+
+//       // Update user verification status and remove verification token
+//       user.verified = true;
+//       user.verificationToken = undefined;
+//       await user.save();
+
+//       // If user has a referrer, update referrer's points
+//       if (user.referrer) {
+//           const referrer = await User.findById(user.referrer);
+//           if (referrer) {
+//               referrer.points += 100;
+//               await referrer.save();
+//           }
+//       }
+
+//       res.status(200).send('Email verified successfully');
+//   } catch (error) {
+//       console.log(error);
+//       res.status(500).send('Server error');
+//   }
+// };
 // Route handler for user registration
-const register = async (req, res) => {
-  try {
-    const { username, email, password, wallet, FullName, referrer } = req.body;
+// const register = async (req, res) => {
+//   try {
+//     const { username, email, password, wallet, FullName, referrer } = req.body;
 
-    // Validate email
-    if (!validateEmail(email)) {
-      return res.status(400).send("Invalid email format");
-    }
+//     // Validate email
+//     if (!validateEmail(email)) {
+//       return res.status(400).send("Invalid email format");
+//     }
 
-    // Validate username
-    if (!validateUsername(username)) {
-      return res.status(400).send("Invalid username format");
-    }
+//     // Validate username
+//     if (!validateUsername(username)) {
+//       return res.status(400).send("Invalid username format");
+//     }
 
-    // Validate full name
-    if (!validateFullName(FullName)) {
-      return res.status(400).send("Invalid full name format");
-    }
+//     // Validate full name
+//     if (!validateFullName(FullName)) {
+//       return res.status(400).send("Invalid full name format");
+//     }
 
-    // Check if email already exists
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      return res.status(400).send("Email already exists");
-    }
+//     // Check if email already exists
+//     const existingEmail = await User.findOne({ email });
+//     if (existingEmail) {
+//       return res.status(400).send("Email already exists");
+//     }
 
-    // Check if username already exists
-    const existingUserName = await User.findOne({ username });
-    if (existingUserName) {
-      return res.status(400).send("Username already exists");
-    }
+//     // Check if username already exists
+//     const existingUserName = await User.findOne({ username });
+//     if (existingUserName) {
+//       return res.status(400).send("Username already exists");
+//     }
 
-    // Check if wallet address already exists and is not empty
-    if (wallet) {
-      const existingWallet = await User.findOne({ wallet });
-      if (existingWallet) {
-        return res.status(400).send("Wallet Address already exists");
-      }
-    }
+//     // Check if wallet address already exists and is not empty
+//     if (wallet) {
+//       const existingWallet = await User.findOne({ wallet });
+//       if (existingWallet) {
+//         return res.status(400).send("Wallet Address already exists");
+//       }
+//     }
 
-    // Find referrer user if provided
-    let referrerUser = null;
-    if (referrer) {
-      referrerUser = await User.findById(referrer);
-      if (!referrerUser) {
-        referrerUser = null;
-      }
-    }
+//     // Find referrer user if provided
+//     let referrerUser = null;
+//     if (referrer) {
+//       referrerUser = await User.findById(referrer);
+//       if (!referrerUser) {
+//         referrerUser = null;
+//       }
+//     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(20).toString("hex");
+//     // Generate verification token
+//     const verificationToken = crypto.randomBytes(20).toString("hex");
 
-    // Create new user instance
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-      wallet: wallet || "",
-      FullName,
-      verificationToken,
-      referrer: referrerUser ? referrerUser._id : null,
-    });
+//     // Create new user instance
+//     const newUser = new User({
+//       username,
+//       email,
+//       password: hashedPassword,
+//       wallet: wallet || "",
+//       FullName,
+//       verificationToken,
+//       referrer: referrerUser ? referrerUser._id : null,
+//     });
 
-    // Save the new user
-    let data = await newUser.save();
+//     // Save the new user
+//     let data = await newUser.save();
 
-    // Construct verification URL and email content
-    const verificationUrl = `https://app.deelance.com/email-verify?token=${verificationToken}`;
-    const emailHtml = `<p>Click here to verify your email: <a href="${verificationUrl}">Verify!</a></p>`;
+//     // Construct verification URL and email content
+//     const verificationUrl = `https://app.deelance.com/email-verify?token=${verificationToken}`;
+//     const emailHtml = `<p>Click here to verify your email: <a href="${verificationUrl}">Verify!</a></p>`;
 
-    // Send verification email
-    await sendEmail(email, username, verificationUrl);
-    console.log("Email sent successfully");
+//     // Send verification email
+//     await sendEmail(email, username, verificationUrl);
+//     console.log("Email sent successfully");
 
-    //  Respond with success message
-    res.status(201).send({ msg: "User registered successfully", DaTA: data });
-  } catch (error) {
-    // Handle errors
-    console.error("Failed to register user:", error);
-    res.status(500).send("Failed to register user");
-  }
-};
+//     //  Respond with success message
+//     res.status(201).send({ msg: "User registered successfully", DaTA: data });
+//   } catch (error) {
+//     // Handle errors
+//     console.error("Failed to register user:", error);
+//     res.status(500).send("Failed to register user");
+//   }
+// };
 
 // // Route handler for user login
 const login = async (req, res) => {
@@ -240,9 +282,9 @@ const login = async (req, res) => {
     }
 
     // Check if user is verified
-    if (!user.verified) {
-      return res.status(400).send("Please verify your email first");
-    }
+    // if (!user.verified) {
+    //   return res.status(400).send("Please verify your email first");
+    // }
     
     console.log("Access token secret:", process.env.ACCESS_TOKEN_SECRET);
 
@@ -252,7 +294,7 @@ const login = async (req, res) => {
 
     // Respond with token
     res.json({ token });
-  } catch (error) {
+  } catch (error) { 
     console.error("Server error:", error);
     res.status(500).send("Server error");
   }
@@ -357,12 +399,6 @@ const avatar = async (req, res) => {
 //     return sanitizedUser;
 // };
 
-const transporter = nodemailer.createTransport(
-  new Transport({
-    apiKey:
-      "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",
-  })
-);
 
 async function sendEmail(to, name, verifyLink) {
   const emailHtml = `
@@ -634,41 +670,6 @@ const UpdateUserIdskills = async (req, res) => {
 };
 
 
-const emailverify=async (req, res) => {
-    const { token } = req.query;
-
-    // Check if token is provided and not empty
-    if (!token || typeof token !== 'string' || token.trim().length === 0) {
-        return res.status(400).json({ errors: [{ type: 'field', msg: 'Token is required', location: 'query' }] });
-    }
-
-    try {
-        // Find user by verification token
-        const user = await User.findOne({ verificationToken: token });
-        if (!user) {
-            return res.status(400).send('Invalid token');
-        }
-
-        // Update user verification status and remove verification token
-        user.verified = true;
-        user.verificationToken = undefined;
-        await user.save();
-
-        // If user has a referrer, update referrer's points
-        if (user.referrer) {
-            const referrer = await User.findById(user.referrer);
-            if (referrer) {
-                referrer.points += 100;
-                await referrer.save();
-            }
-        }
-
-        res.status(200).send('Email verified successfully');
-    } catch (error) {
-        console.log(error);
-        res.status(500).send('Server error');
-    }
-};
 
 getUser = async (req, res) => {
   try {
@@ -842,6 +843,136 @@ const editprofile=async (req, res) => {
 //     return fieldValue && (typeof fieldValue === 'string' ? fieldValue.trim() !== '' : true);
 //   });
 // };
+
+
+const port = 4000;
+
+
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp-relay.brevo.com', 
+  port: 587, 
+  secure: false, 
+  auth: {
+    user: 'deworkdev@gmail.com',
+    pass: 'mckGvnswTr7KYO9t'
+  }
+});
+
+
+const register = async (req, res) => {
+  try {
+    
+    const { username, email, password, wallet, FullName, referrer } = req.body;
+
+    
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+  
+    const verificationToken = crypto.randomBytes(20).toString("hex");
+
+    
+    const verificationUrl = `http://localhost:${port}/email-verify?token=${verificationToken}`;
+
+   
+    const emailSent = await sendVerificationEmail(email, FullName, verificationUrl);
+
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to send verification email" });
+    }
+
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+  
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      wallet,
+      FullName,
+      verificationToken,
+      referrer
+    });
+
+
+    await newUser.save();
+
+   
+    res.status(201).json({ message: "User registered successfully", verificationUrl });
+  } catch (error) {
+   
+    console.error("Failed to register user:", error);
+    res.status(500).json({ message: "Failed to register user" });
+  }
+};
+
+// Define the emailverify route handler
+const emailverify = async (req, res) => {
+  const { token } = req.query;
+  try {
+    
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) {
+      return res.status(404).send('Invalid verification token');
+    }
+
+    user.verified = true;
+    user.verificationToken = undefined; 
+    await user.save();
+
+   
+    res.status(200).send('Email verified successfully');
+  } catch (error) {
+    console.error('Error verifying email:', error);
+    res.status(500).send('Error verifying email');
+  }
+};
+
+// Define function to send verification email
+async function sendVerificationEmail(email, name, verifyLink) {
+ 
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Email Verification</title>
+    </head>
+    <body>
+        <p>Hello ${name},</p>
+        <p>Thanks for signing up for Deelance.</p>
+        <p>Please click the link below to verify your account:</p>
+        <a href="${verifyLink}">${verifyLink}</a>
+        <p>Cheers,<br/>The Deelance Team</p>
+    </body>
+    </html>
+    `;
+
+  // Email data
+  const emailData = {
+    from: "deworkdev@gmail.com",
+    to: email,
+    subject: "Verify your Email! - Deelance",
+    html: emailHtml,
+  };
+
+  try {
+    console.log("Sending verification email with data:", emailData);
+    // Send email using nodemailer transporter
+    const response = await transporter.sendMail(emailData);
+    console.log("Verification email sent successfully:", response);
+    return true; // Return true if email sent successfully
+  } catch (error) {
+    console.error("Error sending verification email:", error);
+    return false; // Return false if email sending failed
+  }
+}
+
 
 module.exports = {
   register,

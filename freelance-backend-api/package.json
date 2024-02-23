@@ -13,6 +13,7 @@
   "dependencies": {
     "@sendgrid/mail": "^8.1.0",
     "aws-sdk": "^2.1525.0",
+    "axios": "^1.6.7",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "country-list": "^2.3.0",

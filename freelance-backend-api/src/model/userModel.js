@@ -78,7 +78,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     wallet: { type: String },
     FullName: { type: String, required: true },
-    verified: { type: Boolean, default: true },
+    verified: { type: Boolean, default: false },
     verificationToken: { type: String },
     registrationDate: { type: Date, default: Date.now },
     isPrivate: { type: Boolean, default: false },

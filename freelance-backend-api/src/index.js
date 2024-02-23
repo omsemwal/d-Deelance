@@ -35,10 +35,16 @@ app.use(cors({
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-mongoose.connect('mongodb://localhost:27017/platform', {
+mongoose.connect('mongodb+srv://16039233:16039233@hariom-semwal.ylnslae.mongodb.net/PLATFORM', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     serverSelectionTimeoutMS: 30000 
+})
+.then(() => {
+    console.log("MongoDB connected successfully");
+})
+.catch((err) => {
+    console.error("Error connecting to MongoDB:", err);
 });
 
 

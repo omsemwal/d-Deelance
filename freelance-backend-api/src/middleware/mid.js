@@ -57,4 +57,4 @@ const token = async (req, res, next) => {
   }
 };
 
-module.exports={token,authenticate}
+module.exports={token,authenticate,getUserFromToken }
