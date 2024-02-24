@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const Transport = require("nodemailer-brevo-transport");
 const nodemailer = require("nodemailer");
 
+
 const axios = require('axios');
 
 const BrevoTransport = require('nodemailer-brevo-transport');
@@ -844,50 +845,44 @@ const editprofile=async (req, res) => {
 //   });
 // };
 
-
 const port = 4000;
 
 
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com', 
+  host: 'smtp.gmail.com', 
   port: 587, 
   secure: false, 
   auth: {
-    user: 'deworkdev@gmail.com',
-    pass: 'mckGvnswTr7KYO9t'
+    user: 'hariomsemwal27@gmail.com',
+    pass: 'oajwmsokgzglpfwc'
   }
 });
 
 
+
+
 const register = async (req, res) => {
   try {
-    
     const { username, email, password, wallet, FullName, referrer } = req.body;
 
+    // Check if the email already exists
+    if (!username || !email || !password || !FullName) {
+      return res.status(400).send("Please provide all fields");
+    }
     
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-  
+    // Generate verification token
     const verificationToken = crypto.randomBytes(20).toString("hex");
 
-    
-    const verificationUrl = `http://localhost:${port}/email-verify?token=${verificationToken}`;
-
-   
-    const emailSent = await sendVerificationEmail(email, FullName, verificationUrl);
-
-    if (!emailSent) {
-      return res.status(500).json({ message: "Failed to send verification email" });
-    }
-
-    
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-  
+    // Create new user instance
     const newUser = new User({
       username,
       email,
@@ -897,24 +892,59 @@ const register = async (req, res) => {
       verificationToken,
       referrer
     });
-
-
     await newUser.save();
 
-   
-    res.status(201).json({ message: "User registered successfully", verificationUrl });
+    // Construct verification URL
+    const verificationUrl = `http://localhost:${port}/email-verify?token=${verificationToken}`;
+   // const verificationUrl = `https://app.deelance.com/email-verify?token=${verificationToken}`;
+
+// Send verification email
+const emailData = {
+  from: "hariomsemwal27@gmail.com",
+  to: email,
+  subject: "Verify your Email! - Deelance",
+  html: `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Email Verification</title>
+  </head>
+  <body>
+      <p>Hello ${FullName},</p>
+      <p>Thanks for signing up for Deelance.</p>
+      <p>Please click the link below to verify your account:</p>
+      <a href="${verificationUrl}">Verify your account</a>
+      <p>Cheers,<br/>The Deelance Team</p>
+  </body>
+  </html>
+  `
+};
+
+
+    transporter.sendMail(emailData, function (err, info) {
+      if (err) {
+        console.error("Error sending verification email:", err);
+        return res.status(500).json({ message: "Failed to send verification email" });
+      } else {
+        console.log('Email sent:', info.response);
+        res.status(201).json({ message: "User registered successfully" , verificationUrl });
+      }
+    });
+
   } catch (error) {
-   
     console.error("Failed to register user:", error);
     res.status(500).json({ message: "Failed to register user" });
   }
+
+
 };
 
 // Define the emailverify route handler
 const emailverify = async (req, res) => {
   const { token } = req.query;
   try {
-    
     const user = await User.findOne({ verificationToken: token });
     if (!user) {
       return res.status(404).send('Invalid verification token');
@@ -924,54 +954,13 @@ const emailverify = async (req, res) => {
     user.verificationToken = undefined; 
     await user.save();
 
-   
     res.status(200).send('Email verified successfully');
   } catch (error) {
     console.error('Error verifying email:', error);
     res.status(500).send('Error verifying email');
   }
-};
+};   
 
-// Define function to send verification email
-async function sendVerificationEmail(email, name, verifyLink) {
- 
-  const emailHtml = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Email Verification</title>
-    </head>
-    <body>
-        <p>Hello ${name},</p>
-        <p>Thanks for signing up for Deelance.</p>
-        <p>Please click the link below to verify your account:</p>
-        <a href="${verifyLink}">${verifyLink}</a>
-        <p>Cheers,<br/>The Deelance Team</p>
-    </body>
-    </html>
-    `;
-
-  // Email data
-  const emailData = {
-    from: "deworkdev@gmail.com",
-    to: email,
-    subject: "Verify your Email! - Deelance",
-    html: emailHtml,
-  };
-
-  try {
-    console.log("Sending verification email with data:", emailData);
-    // Send email using nodemailer transporter
-    const response = await transporter.sendMail(emailData);
-    console.log("Verification email sent successfully:", response);
-    return true; // Return true if email sent successfully
-  } catch (error) {
-    console.error("Error sending verification email:", error);
-    return false; // Return false if email sending failed
-  }
-}
 
 
 module.exports = {
